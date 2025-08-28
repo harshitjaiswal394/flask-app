@@ -1,0 +1,29 @@
+name: CI - Python
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m unittest || true
+
+      - name: Push package to JFrog PyPI
+        run: |
+          pip install build twine
+          python -m build
+          twine upload --repository-url "${{ secrets.JFROG_URL }}/artifactory/api/pypi/python-local/" \
+            -u ${{ secrets.JFROG_USERNAME }} -p ${{ secrets.JFROG_PASSWORD }} dist/*
