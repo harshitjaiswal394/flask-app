@@ -21,9 +21,13 @@ jobs:
       - name: Run tests
         run: python -m unittest || true
 
-      - name: Push package to JFrog PyPI
+      - name: Build package
         run: |
-          pip install build twine
+          pip install build
           python -m build
+
+      - name: Upload to JFrog PyPI
+        run: |
+          pip install twine
           twine upload --repository-url "${{ secrets.JFROG_URL }}/artifactory/api/pypi/python-local/" \
             -u ${{ secrets.JFROG_USERNAME }} -p ${{ secrets.JFROG_PASSWORD }} dist/*

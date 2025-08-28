@@ -1,16 +1,14 @@
-from flask import Flask, jsonify
+from flask import Flask
 
-def create_app():
-    app = Flask(__name__)
+app = Flask(__name__)
 
-    @app.get("/")
-    def index():
-        return "Hello from Python Flask!"
+@app.route("/")
+def index():
+    return "Hello from Flask App!"
 
-    @app.get("/health")
-    def health():
-        return jsonify(status="ok")
+@app.route("/health")
+def health():
+    return {"status": "ok"}
 
-    return app
-
-app = create_app()
+def main():
+    app.run(host="0.0.0.0", port=5000)
