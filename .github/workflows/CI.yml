@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: dev 
     steps:
       - uses: actions/checkout@v4
 
@@ -29,5 +30,9 @@ jobs:
       - name: Upload to JFrog PyPI
         run: |
           pip install twine
-          twine upload --repository-url "${{ secrets.JFROG_URL }}/artifactory/api/pypi/python-local/" \
-            -u ${{ secrets.JFROG_USERNAME }} -p ${{ secrets.JFROG_PASSWORD }} dist/*
+          echo "Uploading to: ${{ secrets.JFROG_URL }}/api/pypi/python-local/"
+          twine upload \
+            --repository-url "${{ secrets.JFROG_URL }}/api/pypi/python-local/" \
+            -u "${{ secrets.JFROG_USERNAME }}" \
+            -p "${{ secrets.JFROG_PASSWORD }}" \
+            dist/*
