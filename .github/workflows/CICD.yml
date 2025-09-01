@@ -47,10 +47,10 @@ jobs:
         run: |
           $Registry = "${{ secrets.JFROG_URLS }}"
           $Username = "${{ secrets.JFROG_USERNAME }}"
-          $Password = "${{ secrets.JFROG_PASSWORD }}"
+          $Password = "${{ secrets.JFROG_PASSWORDS }}"
 
           if ([string]::IsNullOrEmpty($Password)) {
-            Write-Error "JFROG_PASSWORD secret is missing!"
+            Write-Error "JFROG_PASSWORDS secret is missing!"
             exit 1
           }
 
