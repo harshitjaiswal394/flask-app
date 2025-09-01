@@ -45,7 +45,7 @@ jobs:
       - name: Log in to JFrog Docker Registry
         shell: powershell
         run: |
-          $Registry = "${{ secrets.JFROG_URL }}"
+          $Registry = "${{ secrets.JFROG_URLS }}"
           $Username = "${{ secrets.JFROG_USERNAME }}"
           $Password = "${{ secrets.JFROG_PASSWORD }}"
 
@@ -59,7 +59,7 @@ jobs:
 
       - name: Pull latest image
         shell: powershell
-        run: docker pull ${{ secrets.JFROG_URL }}/docker-local/python-app:latest
+        run: docker pull ${{ secrets.JFROG_URLS }}/docker-local/python-app:latest
 
       - name: Stop existing container
         shell: powershell
@@ -71,4 +71,4 @@ jobs:
 
       - name: Run new container
         shell: powershell
-        run: docker run -d --name flask-app -p 5000:5000 ${{ secrets.JFROG_URL }}/docker-local/python-app:latest
+        run: docker run -d --name flask-app -p 5000:5000 ${{ secrets.JFROG_URLS }}/docker-local/python-app:latest
