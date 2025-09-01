@@ -42,9 +42,14 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Log in to JFrog Docker Registry
-        shell: C:\Program Files\Git\bin\bash.exe
-        run: echo "${{ secrets.JFROG_PASSWORD }}" | docker login ${{ secrets.JFROG_URL }} \
-              -u "${{ secrets.JFROG_USERNAME }}" --password-stdin
+        shell: pwsh
+        run: |
+          $Registry = "${{ secrets.JFROG_URL }}/docker-local"
+          $Username = "${{ secrets.JFROG_USERNAME }}"
+          $Password = "${{ secrets.JFROG_PASSWORD }}"
+
+          Write-Host "Logging into JFrog registry $Registry as $Username..."
+          $Password | docker login $Registry -u $Username --password-stdin
 
       - name: Pull latest image
         run: docker pull ${{ secrets.JFROG_URL }}/docker-local/python-app:latest
