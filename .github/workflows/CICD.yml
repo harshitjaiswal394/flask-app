@@ -40,11 +40,12 @@ jobs:
   deploy:
     needs: build
     runs-on: self-hosted
+    environment: dev
     steps:
       - name: Log in to JFrog Docker Registry
         shell: powershell
         run: |
-          $Registry = "${{ secrets.JFROG_URL }}/docker-local"
+          $Registry = "${{ secrets.JFROG_URL }}"
           $Username = "${{ secrets.JFROG_USERNAME }}"
           $Password = "${{ secrets.JFROG_PASSWORD }}"
 
