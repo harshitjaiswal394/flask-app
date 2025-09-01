@@ -42,7 +42,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Log in to JFrog Docker Registry
-        shell: pwsh
+        shell: powershell
         run: |
           $Registry = "${{ secrets.JFROG_URL }}/docker-local"
           $Username = "${{ secrets.JFROG_USERNAME }}"
