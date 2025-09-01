@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM cgr.dev/chainguard/python:3.11
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

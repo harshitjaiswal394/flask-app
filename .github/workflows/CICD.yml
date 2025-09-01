@@ -36,3 +36,21 @@ jobs:
             -u "${{ secrets.JFROG_USERNAME }}" \
             -p "${{ secrets.JFROG_PASSWORD }}" \
             dist/*
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Log in to JFrog Docker Registry
+        run: echo "${{ secrets.JFROG_PASSWORD }}" | docker login ${{ secrets.JFROG_URL }}/docker-local \
+              -u "${{ secrets.JFROG_USERNAME }}" --password-stdin
+
+      - name: Pull latest image
+        run: docker pull ${{ secrets.JFROG_URL }}/docker-local/python-app:latest
+
+      - name: Stop existing container
+        run: docker rm -f flask-app || exit 0
+
+      - name: Run new container
+        run: docker run -d --restart always --name flask-app -p 5000:5000 \
+              ${{ secrets.JFROG_URL }}/docker-local/python-app:latest
