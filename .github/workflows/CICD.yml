@@ -42,7 +42,7 @@ jobs:
         run: echo "${{ secrets.JFROG_ACCESS_TOKEN }}" | docker login ${{ secrets.JFROG_REGISTRY }} -u "${{ secrets.JFROG_USERNAME }}" --password-stdin
 
       - name: Pull latest image
-        run: docker pull ${{ secrets.JFROG_REGISTRY }}/docker-local/flask-app:latest
+        run: docker pull ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
 
       - name: Stop existing container (if running)
         run: docker rm -f flask-app || true
@@ -51,4 +51,4 @@ jobs:
         run: |
           docker run -d --name flask-app \
             -p 5000:5000 \
-            ${{ secrets.JFROG_REGISTRY }}/docker-local/flask-app:latest
+            ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
