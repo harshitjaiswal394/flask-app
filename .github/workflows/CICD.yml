@@ -52,3 +52,19 @@ jobs:
           docker run -d --name flask-app \
             -p 5000:5000 \
             ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
+            
+      - name: Wait for container startup
+        run: sleep 10
+
+      - name: Health Check
+        run: |
+          for i in {1..5}; do
+            echo "Checking health endpoint... attempt $i"
+            if curl -sSf http://localhost:5000/health > /dev/null; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "❌ Health check failed after 5 attempts"
+          exit 1
