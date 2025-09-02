@@ -30,9 +30,9 @@ jobs:
       - name: Upload to JFrog PyPI
         run: |
           pip install twine
-          echo "Uploading to: ${{ secrets.JFROG_URL }}/api/pypi/docker-trial/"
+          echo "Uploading to: ${{ secrets.JFROG_URL }}/api/docker/docker-local"
           twine upload \
-            --repository-url "${{ secrets.JFROG_URL }}/api/pypi/docker-trial/" \
+            --repository-url "${{ secrets.JFROG_URL }}/api/docker/docker-local" \
             -u "${{ secrets.JFROG_USERNAME }}" \
             -p "${{ secrets.JFROG_PASSWORD }}" \
             dist/*
@@ -45,7 +45,7 @@ jobs:
       - name: Log in to JFrog Docker Registry
         shell: powershell
         run: |
-          $Registry = "${{ secrets.JFROG_URLS }}"
+          $Registry = "${{ secrets.JFROG_REGISTRY }}"
           $Username = "${{ secrets.JFROG_USERNAME }}"
           $Password = "${{ secrets.JFROG_ACCESS_TOKEN }}"
 
@@ -59,7 +59,7 @@ jobs:
 
       - name: Pull latest image
         shell: powershell
-        run: docker pull ${{ secrets.JFROG_URLS }}/flask-app:latest
+        run: docker pull ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
 
       - name: Stop existing container
         shell: powershell
@@ -71,4 +71,4 @@ jobs:
 
       - name: Run new container
         shell: powershell
-        run: docker run -d --name flask-app -p 5000:5000 ${{ secrets.JFROG_URLS }}/flask-app:latest
+        run: docker run -d --name flask-app -p 5000:5000 ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
