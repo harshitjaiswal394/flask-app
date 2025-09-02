@@ -22,20 +22,14 @@ jobs:
       - name: Run tests
         run: python -m unittest || true
 
-      - name: Build package
-        run: |
-          pip install build
-          python -m build
+      - name: Login to JFrog Docker Registry
+        run: echo "${{ secrets.JFROG_ACCESS_TOKEN }}" | docker login ${{ secrets.JFROG_REGISTRY }} -u ${{ secrets.JFROG_USERNAME }} --password-stdin
 
-      - name: Upload to JFrog PyPI
-        run: |
-          pip install twine
-          echo "Uploading to: ${{ secrets.JFROG_URL }}/api/docker/docker-local"
-          twine upload \
-            --repository-url "${{ secrets.JFROG_URL }}/api/docker/docker-local" \
-            -u "${{ secrets.JFROG_USERNAME }}" \
-            -p "${{ secrets.JFROG_PASSWORD }}" \
-            dist/*
+      - name: Build Docker Image
+        run: docker build -t ${{ secrets.JFROG_REGISTRY }}/flask-app:latest .
+
+      - name: Push Docker Image
+        run: docker push ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
 
   deploy:
     needs: build
