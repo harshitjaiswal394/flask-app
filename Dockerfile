@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/python:latest-dev
+FROM python:3.11-slim
 
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -21,4 +21,4 @@ COPY wsgi.py .
 EXPOSE 5000
 
 # Gunicorn entrypoint
-CMD gunicorn --bind 0.0.0.0:5000 wsgi:app
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]
