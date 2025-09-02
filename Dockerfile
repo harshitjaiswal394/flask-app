@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/python:3.11-dev
+FROM cgr.dev/chainguard/python
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
