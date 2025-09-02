@@ -33,36 +33,22 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: dev
+
     steps:
+
       - name: Log in to JFrog Docker Registry
-        shell: powershell
-        run: |
-          $Registry = "${{ secrets.JFROG_REGISTRY }}"
-          $Username = "${{ secrets.JFROG_USERNAME }}"
-          $Password = "${{ secrets.JFROG_ACCESS_TOKEN }}"
-
-          if ([string]::IsNullOrEmpty($Password)) {
-            Write-Error "JFROG_ACCESS_TOKEN secret is missing!"
-            exit 1
-          }
-
-          Write-Host "Logging into JFrog registry $Registry as $Username..."
-          $Password | docker login $Registry -u $Username --password-stdin
+        run: echo "${{ secrets.JFROG_ACCESS_TOKEN }}" | docker login ${{ secrets.JFROG_REGISTRY }} -u "${{ secrets.JFROG_USERNAME }}" --password-stdin
 
       - name: Pull latest image
-        shell: powershell
-        run: docker pull ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
+        run: docker pull ${{ secrets.JFROG_REGISTRY }}/docker-local/flask-app:latest
 
-      - name: Stop existing container
-        shell: powershell
-        run: |
-          if (docker ps -q -f name=flask-app) {
-            docker stop flask-app
-            docker rm flask-app
-          }
+      - name: Stop existing container (if running)
+        run: docker rm -f flask-app || true
 
       - name: Run new container
-        shell: powershell
-        run: docker run -d --name flask-app -p 5000:5000 ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
+        run: |
+          docker run -d --name flask-app \
+            -p 5000:5000 \
+            ${{ secrets.JFROG_REGISTRY }}/docker-local/flask-app:latest
