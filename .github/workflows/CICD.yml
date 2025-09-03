@@ -42,10 +42,10 @@ jobs:
       
       - name: Mask Vault secrets
         run: |
-          echo "::add-mask::$JFROG_REGISTRY"
-          echo "::add-mask::$JFROG_USERNAME"
-          echo "::add-mask::$JFROG_ACCESS_TOKEN"
-          echo "::add-mask::$JFROG_REPO"
+          echo "::add-mask::$JFROG_REGISTRY" > /dev/null
+          echo "::add-mask::$JFROG_USERNAME" > /dev/null
+          echo "::add-mask::$JFROG_ACCESS_TOKEN" > /dev/null
+          echo "::add-mask::$JFROG_REPO" > /dev/null
 
       - name: Login to JFrog Docker Registry
         run: echo "$JFROG_ACCESS_TOKEN" | docker login $JFROG_REGISTRY -u $JFROG_USERNAME --password-stdin
