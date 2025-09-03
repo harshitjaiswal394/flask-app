@@ -7,7 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: dev 
+    environment: dev
+
     steps:
       - uses: actions/checkout@v4
 
@@ -16,35 +17,50 @@ jobs:
         with:
           python-version: "3.11"
 
+      # 1. Install Vault CLI
+      - name: Install Vault CLI
+        run: |
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+          sudo apt-get update && sudo apt-get install vault jq -y
+
+      # 2. Authenticate to Vault
+      - name: Authenticate to Vault
+        run: |
+          echo "${{ secrets.VAULT_TOKEN }}" > token.txt
+          export VAULT_ADDR="https://vault-cluster-private-vault-2ae815c5.e1808949.z1.hashicorp.cloud:8200"
+          export VAULT_NAMESPACE="admin"
+          export VAULT_TOKEN=$(cat token.txt)
+
+          # Get secrets from Vault
+          vault kv get -namespace=admin -mount=kv -format=json secret \
+          | jq -r '.data.data' > vault_secrets.json
+
+          # Export values
+          echo "JFROG_REGISTRY=$(jq -r .JFROG_REGISTRY vault_secrets.json)" >> $GITHUB_ENV
+          echo "JFROG_USERNAME=$(jq -r .JFROG_USERNAME vault_secrets.json)" >> $GITHUB_ENV
+          echo "JFROG_ACCESS_TOKEN=$(jq -r .JFROG_ACCESS_TOKEN vault_secrets.json)" >> $GITHUB_ENV
+          echo "JFROG_REPO=$(jq -r .JFROG_REPO vault_secrets.json)" >> $GITHUB_ENV
+
+      # 3. Mask secrets in logs
+      - name: Mask Vault secrets
+        run: |
+          echo "::add-mask::$JFROG_REGISTRY"
+          echo "::add-mask::$JFROG_USERNAME"
+          echo "::add-mask::$JFROG_ACCESS_TOKEN"
+          echo "::add-mask::$JFROG_REPO"
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Run tests
         run: python -m unittest || true
 
-      - name: Install Vault CLI
-        run: |
-          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt-get update && sudo apt-get install vault -y
-
-      - name: Fetch secrets from Vault
-        env:
-          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-          VAULT_NAMESPACE: ${{ secrets.VAULT_NAMESPACE }}
-          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-        run: |
-          vault kv get -namespace=$VAULT_NAMESPACE -mount=kv -format=json secret > secret.json
-          echo "JFROG_REGISTRY=$(jq -r '.data.data.JFROG_REGISTRY' secret.json)" >> $GITHUB_ENV
-          echo "JFROG_USERNAME=$(jq -r '.data.data.JFROG_USERNAME' secret.json)" >> $GITHUB_ENV
-          echo "JFROG_ACCESS_TOKEN=$(jq -r '.data.data.JFROG_ACCESS_TOKEN' secret.json)" >> $GITHUB_ENV
-          echo "JFROG_REPO=$(jq -r '.data.data.JFROG_REPO' secret.json)" >> $GITHUB_ENV
-
       - name: Login to JFrog Docker Registry
-        run: echo "$JFROG_ACCESS_TOKEN" | docker login $JFROG_REGISTRY -u $JFROG_USERNAME --password-stdin
+        run: echo "${JFROG_ACCESS_TOKEN}" | docker login $JFROG_REGISTRY -u "$JFROG_USERNAME" --password-stdin
 
       - name: Build Docker Image
-        run: docker build -t $JFROG_REGISTRY/flask-app:latest .
+        run: docker build -t $JFROG_REPO/flask-app:latest .
 
       - name: Push Docker Image
         run: docker push $JFROG_REPO/flask-app:latest
@@ -53,29 +69,13 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: dev
+
     steps:
-      - name: Install Vault CLI
-        run: |
-          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt-get update && sudo apt-get install vault -y
-
-      - name: Fetch secrets from Vault
-        env:
-          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-          VAULT_NAMESPACE: ${{ secrets.VAULT_NAMESPACE }}
-          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-        run: |
-          vault kv get -namespace=$VAULT_NAMESPACE -mount=kv -format=json secret > secret.json
-          echo "JFROG_REGISTRY=$(jq -r '.data.data.JFROG_REGISTRY' secret.json)" >> $GITHUB_ENV
-          echo "JFROG_USERNAME=$(jq -r '.data.data.JFROG_USERNAME' secret.json)" >> $GITHUB_ENV
-          echo "JFROG_ACCESS_TOKEN=$(jq -r '.data.data.JFROG_ACCESS_TOKEN' secret.json)" >> $GITHUB_ENV
-
       - name: Log in to JFrog Docker Registry
-        run: echo "$JFROG_ACCESS_TOKEN" | docker login $JFROG_REGISTRY -u "$JFROG_USERNAME" --password-stdin
+        run: echo "${JFROG_ACCESS_TOKEN}" | docker login $JFROG_REGISTRY -u "$JFROG_USERNAME" --password-stdin
 
       - name: Pull latest image
-        run: docker pull $JFROG_REGISTRY/flask-app:latest
+        run: docker pull $JFROG_REPO/flask-app:latest
 
       - name: Stop existing container (if running)
         run: docker rm -f flask-app || true
@@ -84,7 +84,7 @@ jobs:
         run: |
           docker run -d --name flask-app \
             -p 5000:5000 \
-            $JFROG_REGISTRY/flask-app:latest
+            $JFROG_REPO/flask-app:latest
 
       - name: Wait for container startup
         run: |
