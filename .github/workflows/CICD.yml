@@ -38,6 +38,7 @@ jobs:
           echo "JFROG_REGISTRY=$(jq -r '.data.data.JFROG_REGISTRY' secret.json)" >> $GITHUB_ENV
           echo "JFROG_USERNAME=$(jq -r '.data.data.JFROG_USERNAME' secret.json)" >> $GITHUB_ENV
           echo "JFROG_ACCESS_TOKEN=$(jq -r '.data.data.JFROG_ACCESS_TOKEN' secret.json)" >> $GITHUB_ENV
+          echo "JFROG_REPO=$(jq -r '.data.data.JFROG_REPO' secret.json)" >> $GITHUB_ENV
 
       - name: Login to JFrog Docker Registry
         run: echo "$JFROG_ACCESS_TOKEN" | docker login $JFROG_REGISTRY -u $JFROG_USERNAME --password-stdin
@@ -46,7 +47,7 @@ jobs:
         run: docker build -t $JFROG_REGISTRY/flask-app:latest .
 
       - name: Push Docker Image
-        run: docker push $JFROG_REGISTRY/flask-app:latest
+        run: docker push $JFROG_REPO/flask-app:latest
 
   deploy:
     needs: build
