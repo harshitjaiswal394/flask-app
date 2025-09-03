@@ -39,6 +39,13 @@ jobs:
           echo "JFROG_USERNAME=$(jq -r '.data.data.JFROG_USERNAME' secret.json)" >> $GITHUB_ENV
           echo "JFROG_ACCESS_TOKEN=$(jq -r '.data.data.JFROG_ACCESS_TOKEN' secret.json)" >> $GITHUB_ENV
           echo "JFROG_REPO=$(jq -r '.data.data.JFROG_REPO' secret.json)" >> $GITHUB_ENV
+      
+      - name: Mask Vault secrets
+        run: |
+          echo "::add-mask::$JFROG_REGISTRY"
+          echo "::add-mask::$JFROG_USERNAME"
+          echo "::add-mask::$JFROG_ACCESS_TOKEN"
+          echo "::add-mask::$JFROG_REPO"
 
       - name: Login to JFrog Docker Registry
         run: echo "$JFROG_ACCESS_TOKEN" | docker login $JFROG_REGISTRY -u $JFROG_USERNAME --password-stdin
@@ -70,8 +77,9 @@ jobs:
           echo "JFROG_REGISTRY=$(jq -r '.data.data.JFROG_REGISTRY' secret.json)" >> $GITHUB_ENV
           echo "JFROG_USERNAME=$(jq -r '.data.data.JFROG_USERNAME' secret.json)" >> $GITHUB_ENV
           echo "JFROG_ACCESS_TOKEN=$(jq -r '.data.data.JFROG_ACCESS_TOKEN' secret.json)" >> $GITHUB_ENV
+          echo "JFROG_REPO=$(jq -r '.data.data.JFROG_REPO' secret.json)" >> $GITHUB_ENV
 
-      - name: Mask Vault secrets
+            - name: Mask Vault secrets
         run: |
           echo "::add-mask::$JFROG_REGISTRY"
           echo "::add-mask::$JFROG_USERNAME"
