@@ -22,60 +22,25 @@ jobs:
       - name: Run tests
         run: python -m unittest || true
 
-      - name: Login to JFrog Docker Registry
-        run: echo "${{ secrets.JFROG_ACCESS_TOKEN }}" | docker login ${{ secrets.JFROG_REGISTRY }} -u ${{ secrets.JFROG_USERNAME }} --password-stdin
-
-      - name: Build Docker Image
-        run: docker build -t ${{ secrets.JFROG_REGISTRY }}/flask-app:latest .
-
-      - name: Push Docker Image
-        run: docker push ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
-
-  deploy:name: CI - Python
-
-on:
-  push:
-    branches: [ "main" ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    environment: dev 
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Install Vault CLI
         run: |
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
           sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt-get update && sudo apt-get install vault jq -y
+          sudo apt-get update && sudo apt-get install vault -y
 
-      - name: Fetch JFrog secrets from Vault
+      - name: Fetch secrets from Vault
+        env:
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_NAMESPACE: ${{ secrets.VAULT_NAMESPACE }}
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
         run: |
-          export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
-          export VAULT_NAMESPACE="${{ secrets.VAULT_NAMESPACE }}"
-          export VAULT_TOKEN="${{ secrets.VAULT_TOKEN }}"
-
-          # Fetch JSON secrets from Vault KV
-          vault kv get -namespace=$VAULT_NAMESPACE -mount="kv" -format=json secret > jfrog.json
-
-          echo "JFROG_REGISTRY=$(jq -r '.data.data.JFROG_REGISTRY' jfrog.json)" >> $GITHUB_ENV
-          echo "JFROG_USERNAME=$(jq -r '.data.data.JFROG_USERNAME' jfrog.json)" >> $GITHUB_ENV
-          echo "JFROG_ACCESS_TOKEN=$(jq -r '.data.data.JFROG_ACCESS_TOKEN' jfrog.json)" >> $GITHUB_ENV
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run tests
-        run: python -m unittest || true
+          vault kv get -namespace=$VAULT_NAMESPACE -mount=kv -format=json secret > secret.json
+          echo "JFROG_REGISTRY=$(jq -r '.data.data.JFROG_REGISTRY' secret.json)" >> $GITHUB_ENV
+          echo "JFROG_USERNAME=$(jq -r '.data.data.JFROG_USERNAME' secret.json)" >> $GITHUB_ENV
+          echo "JFROG_ACCESS_TOKEN=$(jq -r '.data.data.JFROG_ACCESS_TOKEN' secret.json)" >> $GITHUB_ENV
 
       - name: Login to JFrog Docker Registry
-        run: echo "$JFROG_ACCESS_TOKEN" | docker login "$JFROG_REGISTRY" -u "$JFROG_USERNAME" --password-stdin
+        run: echo "$JFROG_ACCESS_TOKEN" | docker login $JFROG_REGISTRY -u $JFROG_USERNAME --password-stdin
 
       - name: Build Docker Image
         run: docker build -t $JFROG_REGISTRY/flask-app:latest .
@@ -92,22 +57,21 @@ jobs:
         run: |
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
           sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt-get update && sudo apt-get install vault jq -y
+          sudo apt-get update && sudo apt-get install vault -y
 
-      - name: Fetch JFrog secrets from Vault
+      - name: Fetch secrets from Vault
+        env:
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_NAMESPACE: ${{ secrets.VAULT_NAMESPACE }}
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
         run: |
-          export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
-          export VAULT_NAMESPACE="${{ secrets.VAULT_NAMESPACE }}"
-          export VAULT_TOKEN="${{ secrets.VAULT_TOKEN }}"
-
-          vault kv get -namespace=$VAULT_NAMESPACE -mount="kv" -format=json secret/jfrog > jfrog.json
-
-          echo "JFROG_REGISTRY=$(jq -r '.data.data.JFROG_REGISTRY' jfrog.json)" >> $GITHUB_ENV
-          echo "JFROG_USERNAME=$(jq -r '.data.data.JFROG_USERNAME' jfrog.json)" >> $GITHUB_ENV
-          echo "JFROG_ACCESS_TOKEN=$(jq -r '.data.data.JFROG_ACCESS_TOKEN' jfrog.json)" >> $GITHUB_ENV
+          vault kv get -namespace=$VAULT_NAMESPACE -mount=kv -format=json secret > secret.json
+          echo "JFROG_REGISTRY=$(jq -r '.data.data.JFROG_REGISTRY' secret.json)" >> $GITHUB_ENV
+          echo "JFROG_USERNAME=$(jq -r '.data.data.JFROG_USERNAME' secret.json)" >> $GITHUB_ENV
+          echo "JFROG_ACCESS_TOKEN=$(jq -r '.data.data.JFROG_ACCESS_TOKEN' secret.json)" >> $GITHUB_ENV
 
       - name: Log in to JFrog Docker Registry
-        run: echo "$JFROG_ACCESS_TOKEN" | docker login "$JFROG_REGISTRY" -u "$JFROG_USERNAME" --password-stdin
+        run: echo "$JFROG_ACCESS_TOKEN" | docker login $JFROG_REGISTRY -u "$JFROG_USERNAME" --password-stdin
 
       - name: Pull latest image
         run: docker pull $JFROG_REGISTRY/flask-app:latest
@@ -120,48 +84,6 @@ jobs:
           docker run -d --name flask-app \
             -p 5000:5000 \
             $JFROG_REGISTRY/flask-app:latest
-
-      - name: Wait for container startup
-        run: |
-          echo "Waiting for container to be ready..."
-          sleep 30
-          docker ps -a
-          docker logs flask-app
-
-      - name: Health Check
-        run: |
-          for i in {1..10}; do
-            echo "Checking health endpoint... attempt $i"
-            if curl -sSf http://localhost:5000/health > /dev/null; then
-              echo "✅ Health check passed"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "❌ Health check failed after 10 attempts"
-          docker logs flask-app
-          exit 1
-
-    needs: build
-    runs-on: ubuntu-latest
-    environment: dev
-
-    steps:
-
-      - name: Log in to JFrog Docker Registry
-        run: echo "${{ secrets.JFROG_ACCESS_TOKEN }}" | docker login ${{ secrets.JFROG_REGISTRY }} -u "${{ secrets.JFROG_USERNAME }}" --password-stdin
-
-      - name: Pull latest image
-        run: docker pull ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
-
-      - name: Stop existing container (if running)
-        run: docker rm -f flask-app || true
-
-      - name: Run new container
-        run: |
-          docker run -d --name flask-app \
-            -p 5000:5000 \
-            ${{ secrets.JFROG_REGISTRY }}/flask-app:latest
 
       - name: Wait for container startup
         run: |
